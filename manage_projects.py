@@ -53,7 +53,6 @@ import time
 
 import gerritlib
 
-import gerritdb
 import utils
 
 registry = utils.ProjectsRegistry()
@@ -190,28 +189,12 @@ def push_acl_config(project, remote_url, repo_path, gitid, env=None):
     return True
 
 
-def _get_group_uuid(group):
-    """Wait for up to 10 seconds for the group to be created in the DB."""
-    query = "SELECT group_uuid FROM account_groups WHERE name = %s"
-    con = gerritdb.connect()
-    for x in range(10):
-        cursor = con.cursor()
-        cursor.execute(query, (group,))
-        data = cursor.fetchone()
-        cursor.close()
-        con.commit()
-        if data:
-            return data[0]
-        time.sleep(1)
-    return None
-
-
 def get_group_uuid(gerrit, group):
-    uuid = _get_group_uuid(group)
+    uuid = gerrit.getGroupUUID(group)
     if uuid:
         return uuid
     gerrit.createGroup(group)
-    uuid = _get_group_uuid(group)
+    uuid = gerrit.getGroupUUID(group)
     if uuid:
         return uuid
     return None
@@ -561,8 +544,8 @@ def main():
 
                 description = (
                     find_description_override(repo_path) or description)
-                if description:
-                    gerrit.updateProject(project, 'description', description)
+                #if description:
+                #    gerrit.updateProject(project, 'description', description)
 
                 if project_created:
                     push_to_gerrit(

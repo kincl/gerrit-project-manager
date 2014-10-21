@@ -34,6 +34,8 @@ UPDATE_ALLOWED_KEYS = ['description', 'submit-type',
                        'content-merge', 'change-id',
                        'project-state',
                        'max-object-size-limit']
+GERRIT_SYSTEM_GROUPS= ['Anonymous Users', 'Change Owner',
+                       'Project Owners', 'Registered Users']
 
 
 class GerritWatcher(threading.Thread):
@@ -261,6 +263,17 @@ class Gerrit(object):
         out, err = self._ssh(cmd)
         return filter(None, out.split('\n'))
 
+    def getGroupUUID(self, group):
+        if group in GERRIT_SYSTEM_GROUPS:
+            return 'global:%s' % group.replace(' ', '-')
+
+        cmd = 'gerrit ls-groups -v -q "%s"' % group
+        out, err = self._ssh(cmd, False)
+        if out:
+            return out.split('\t')[1]
+        else:
+            return None
+
     def listPlugins(self):
         plugins = self.getPlugins()
         plugin_names = plugins.keys()
@@ -348,7 +361,7 @@ class Gerrit(object):
             pprint.pformat(data)))
         return data
 
-    def _ssh(self, command):
+    def _ssh(self, command, careaboutexitcode=True):
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
@@ -368,6 +381,6 @@ class Gerrit(object):
 
         err = stderr.read()
         self.log.debug("SSH received stderr:\n%s" % err)
-        if ret:
+        if ret and careaboutexitcode:
             raise Exception("Gerrit error executing %s" % command)
         return (out, err)
