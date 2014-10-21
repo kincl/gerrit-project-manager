@@ -449,7 +449,7 @@ def create_local_mirror(local_git_dir, project_git,
     git_mirror_path = os.path.join(local_git_dir, project_git)
     if not os.path.exists(git_mirror_path):
         (ret, output) = run_command_status(
-            "git --bare init %s" % git_mirror_path)
+            "git init --bare %s" % git_mirror_path)
         if ret:
             run_command("rm -rf git_mirror_path")
             raise Exception(output)
@@ -561,6 +561,8 @@ def main():
 
                 description = (
                     find_description_override(repo_path) or description)
+                if description:
+                    gerrit.updateProject(project, 'description', description)
 
                 if project_created:
                     push_to_gerrit(
