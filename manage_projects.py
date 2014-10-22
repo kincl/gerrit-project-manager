@@ -55,7 +55,7 @@ import time
 
 import gerritlib
 
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, FileSystemLoader
 
 PROJECTS_INI = os.environ.get('PROJECTS_INI', '/home/gerrit2/projects.ini')
 PROJECTS_YAML = os.environ.get('PROJECTS_YAML', '/home/gerrit2/projects.yaml')
@@ -185,10 +185,10 @@ def fetch_config(project, remote_url, repo_path, env=None):
             break
         else:
             log.debug("Failed to fetch refs/meta/config for project: %s" %
-                      project)
+                      project['name'])
             time.sleep(2)
     if status != 0:
-        log.error("Failed to fetch refs/meta/config for project: %s" % project)
+        log.error("Failed to fetch refs/meta/config for project: %s" % project['name'])
         raise FetchConfigException()
 
     # Poll for project.config as gerrit may not have committed an empty
@@ -206,12 +206,12 @@ def fetch_config(project, remote_url, repo_path, env=None):
                 "project.config", env)
         if output.strip() != "project.config" or status != 0:
             log.debug("Failed to find project.config for project: %s" %
-                      project)
+                      project['name'])
             time.sleep(2)
         else:
             break
     if output.strip() != "project.config" or status != 0:
-        log.error("Failed to find project.config for project: %s" % project)
+        log.error("Failed to find project.config for project: %s" % project['name'])
         raise FetchConfigException()
 
     # Because the following fails if executed more than once you should only
@@ -219,17 +219,26 @@ def fetch_config(project, remote_url, repo_path, env=None):
     status = git_command(repo_path, "checkout -b config "
                          "remotes/gerrit-meta/config")
     if status != 0:
-        log.error("Failed to checkout config for project: %s" % project)
+        log.error("Failed to checkout config for project: %s" % project['name'])
         raise FetchConfigException()
 
 
-def copy_acl_config(project, repo_path, acl_config):
-    if not os.path.exists(acl_config):
+def copy_acl_config(project, repo_path, ACL_DIR):
+
+    if not os.path.exists(os.path.join(ACL_DIR, project['acl_config'])):
         raise CopyACLException()
+
+    env = Environment(loader=FileSystemLoader(ACL_DIR))
+    template = env.get_template(project['acl_config'])
+    (fd, tmpname) = tempfile.mkstemp(text=True)
+    template.stream(project=project).dump(tmpname)
+    os.close(fd)
 
     acl_dest = os.path.join(repo_path, "project.config")
     status, _ = run_command("cp %s %s" %
-                            (acl_config, acl_dest), status=True)
+                            (tmpname, acl_dest), status=True)
+    os.unlink(tmpname)
+
     if status != 0:
         raise CopyACLException()
 
@@ -242,13 +251,13 @@ def push_acl_config(project, remote_url, repo_path, gitid, env=None):
     cmd = "commit -a -m'Update project config.' --author='%s'" % gitid
     status = git_command(repo_path, cmd)
     if status != 0:
-        log.error("Failed to commit config for project: %s" % project)
+        log.error("Failed to commit config for project: %s" % project['name'])
         return False
     status, out = git_command_output(repo_path,
                                      "push %s HEAD:refs/meta/config" %
                                      remote_url, env)
     if status != 0:
-        log.error("Failed to push config for project: %s" % project)
+        log.error("Failed to push config for project: %s" % project['name'])
         return False
     return True
 
@@ -286,7 +295,7 @@ def create_groups_file(project, gerrit, repo_path):
                 fp.write("%s\t%s\n" % (uuid, group))
     status = git_command(repo_path, "add groups")
     if status != 0:
-        log.error("Failed to add groups file for project: %s" % project)
+        log.error("Failed to add groups file for project: %s" % project['name'])
         raise CreateGroupException()
 
 
@@ -308,7 +317,7 @@ def find_description_override(repo_path):
 
 
 def make_local_copy(repo_path, project, project_list,
-                    git_opts, ssh_env, upstream, GERRIT_HOST, GERRIT_PORT,
+                    git_opts, ssh_env, GERRIT_HOST, GERRIT_PORT,
                     project_git, GERRIT_GITID, gerrit):
 
     # Ensure that the base location exists
@@ -326,11 +335,11 @@ def make_local_copy(repo_path, project, project_list,
     #                we should consider 'gerrit has it' to be
     #                'gerrit repo has a master branch'
     # ^DONE(kincl)
-    if project in project_list and 'refs/heads/master' in gerrit.listProjectRefs(project):
+    if project['name'] in project_list and 'refs/heads/master' in gerrit.listProjectRefs(project['name']):
         run_command(
             "git clone %(remote_url)s %(repo_path)s" % git_opts,
             env=ssh_env)
-        if upstream:
+        if project['upstream']:
             git_command(
                 repo_path,
                 "remote add -f upstream %(upstream)s" % git_opts)
@@ -421,7 +430,7 @@ def push_to_gerrit(repo_path, project, push_string, remote_url, ssh_env):
             "Error pushing %s to Gerrit." % project)
 
 
-def sync_upstream(repo_path, project, ssh_env, upstream_prefix):
+def sync_upstream(repo_path, project, ssh_env):
     git_command(
         repo_path,
         "remote update upstream --prune", env=ssh_env)
@@ -435,9 +444,9 @@ def sync_upstream(repo_path, project, ssh_env, upstream_prefix):
         if "->" in branch:
             continue
         local_branch = branch.split()[0][len('remotes/upstream/'):]
-        if upstream_prefix:
+        if project['upstream_prefix']:
             local_branch = "%s/%s" % (
-                upstream_prefix, local_branch)
+                project['upstream_prefix'], local_branch)
 
         # Check out an up to date copy of the branch, so that
         # we can push it and it will get picked up below
@@ -454,16 +463,16 @@ def sync_upstream(repo_path, project, ssh_env, upstream_prefix):
         git_command(repo_path, 'push origin --tags', env=ssh_env)
     except Exception:
         log.exception(
-            "Error pushing %s to Gerrit." % project)
+            "Error pushing %s to Gerrit." % project['name'])
 
 
-def process_acls(acl_config, project, ACL_DIR, section,
-                 remote_url, repo_path, ssh_env, gerrit, GERRIT_GITID):
-    if not os.path.isfile(acl_config):
+def process_acls(project, ACL_DIR, remote_url, repo_path,
+                 ssh_env, gerrit, GERRIT_GITID):
+    if not os.path.isfile(os.path.join(ACL_DIR, project['acl_config'])):
         return
     try:
         fetch_config(project, remote_url, repo_path, ssh_env)
-        if not copy_acl_config(project, repo_path, acl_config):
+        if not copy_acl_config(project, repo_path, ACL_DIR):
             # nothing was copied, so we're done
             return
         create_groups_file(project, gerrit, repo_path)
@@ -471,7 +480,7 @@ def process_acls(acl_config, project, ACL_DIR, section,
                         GERRIT_GITID, ssh_env)
     except Exception:
         log.exception(
-            "Exception processing ACLS for %s." % project)
+            "Exception processing ACLS for %s." % project['name'])
     finally:
         git_command(repo_path, 'reset --hard')
         git_command(repo_path, 'checkout master')
@@ -550,45 +559,42 @@ def main():
     project_list = gerrit.listProjects()
     ssh_env = make_ssh_wrapper(GERRIT_USER, GERRIT_KEY)
 
-    jinja_env = Environment(loader=FileSystemLoader(ACL_DIR, followlinks=True))
-
     try:
 
         for section in registry.configs_list:
-            project = section['project']
+            project = dict(name=section['project'])
             if args.projects and project not in args.projects:
                 continue
 
             try:
                 # Figure out all of the options
-                options = section.get('options', dict())
-                description = section.get('description', None)
-                upstream = section.get('upstream', None)
-                upstream_prefix = section.get('upstream-prefix', None)
-                track_upstream = 'track-upstream' in options
-                repo_path = os.path.join(CACHE_DIR, project)
+                project['options']= section.get('options', dict())
+                project['description'] = section.get('description', None)
+                project['upstream'] = section.get('upstream', None)
+                project['upstream_prefix'] = section.get('upstream-prefix', None)
+                project['track_upstream'] = 'track-upstream' in project['options']
+                project['acl_config'] = section.get('acl-config',
+                                                    '%s.config' % project['name'])
+                repo_path = os.path.join(CACHE_DIR, project['name'])
 
                 # If this project doesn't want to use gerrit, exit cleanly.
-                if 'no-gerrit' in options:
+                if 'no-gerrit' in project['options']:
                     continue
 
-                project_git = "%s.git" % project
+                project_git = "%s.git" % project['name']
                 remote_url = "ssh://%s:%s/%s" % (
                     GERRIT_HOST,
                     GERRIT_PORT,
-                    project)
-                git_opts = dict(upstream=upstream,
+                    project['name'])
+                git_opts = dict(upstream=project['upstream'],
                                 repo_path=repo_path,
                                 remote_url=remote_url)
-                acl_config = section.get(
-                    'acl-config',
-                    '%s.config' % os.path.join(ACL_DIR, project))
 
                 # Create the project in Gerrit first, since it will fail
                 # spectacularly if its project directory or local replica
                 # already exist on disk
                 project_created = create_gerrit_project(
-                    project, project_list, gerrit)
+                    project['name'], project_list, gerrit)
 
                 # Create the repo for the local git mirror
                 create_local_mirror(
@@ -601,34 +607,32 @@ def main():
                     # Make Local repo
                     push_string = make_local_copy(
                         repo_path, project, project_list,
-                        git_opts, ssh_env, upstream, GERRIT_HOST, GERRIT_PORT,
+                        git_opts, ssh_env, GERRIT_HOST, GERRIT_PORT,
                         project_git, GERRIT_GITID, gerrit)
                 else:
                     # We do have a local copy of it already, make sure it's
                     # in shape to have work done.
                     update_local_copy(
-                        repo_path, track_upstream, git_opts, ssh_env)
+                        repo_path, project['track_upstream'], git_opts, ssh_env)
 
-                description = (
-                    find_description_override(repo_path) or description)
-                #if description:
-                #    gerrit.updateProject(project, 'description', description)
+                #description = (
+                #    find_description_override(repo_path) or description)
 
                 if project_created:
                     push_to_gerrit(
-                        repo_path, project, push_string, remote_url, ssh_env)
-                    gerrit.replicate(project)
+                        repo_path, project['name'], push_string, remote_url, ssh_env)
+                    gerrit.replicate(project['name'])
 
                 # If we're configured to track upstream, make sure we have
                 # upstream's refs, and then push them to the appropriate
                 # branches in gerrit
-                if track_upstream:
-                    sync_upstream(repo_path, project, ssh_env, upstream_prefix)
+                if project['track_upstream']:
+                    sync_upstream(repo_path, project, ssh_env)
 
-                if acl_config:
+                if project['acl_config']:
                     process_acls(
-                        acl_config, project, ACL_DIR, section,
-                        remote_url, repo_path, ssh_env, gerrit, GERRIT_GITID)
+                        project, ACL_DIR, remote_url, repo_path,
+                        ssh_env, gerrit, GERRIT_GITID)
 
             except Exception:
                 log.exception(
