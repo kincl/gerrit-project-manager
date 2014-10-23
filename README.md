@@ -42,8 +42,8 @@ projects.yaml
 
 Using
 =====
-gerrit-projects --conf test_projects.ini --project_conf test_projects.yaml -v
+`gerrit-projects --conf test_projects.ini --project_conf test_projects.yaml -v`
 
 Packaging
 =========
-python setup.py bdist_rpm
+`python setup.py bdist_rpm`
