@@ -1,3 +1,104 @@
-- project: testing-proj
-  description: This is a great project
+- project: test-project
+  description: This is a great test project
+  acl-config: Low-Impact-Project.config
+
+- project: NCCS-Repackaging
+  description: NCCS-specific SPEC files for repackaging existing source projects
+  acl-config: Low-Impact-Project.config
+- project: nccs_code_dev
+  description: Documentation for the NCCS Code Development Cycle. Uses jekyll and markdown to generate a static site without the need for a database or production webserver
+  acl-config: Low-Impact-Project.config
+- project: rats
+  description: RATS Project
   acl-config: Significant-Impact-Project.config
+- project: rats-reporting
+  description: RATS Reporting
+  acl-config: Significant-Impact-Project.config
+- project: rt-search
+  description: Fulltext search for RT with Lucene
+  acl-config: Low-Impact-Project.config
+- project: smithy
+  description: Toolchain build environment
+  acl-config: Low-Impact-Project.config
+- project: statuscast
+  description: Web service that stores HPC center information to be broadcast widely to end-users via multiple communication channels
+  acl-config: Low-Impact-Project.config
+- project: ua_ncrc_reporting
+  description: Tools for NCRC reporting
+  acl-config: Low-Impact-Project.config
+
+- project: cmeval/puppet
+  description: Configuration Magement Evaluation - Puppet Repo
+  acl-config: Low-Impact-Project.config
+- project: cmeval/puppet-hiera
+  description: Configuration Magement Evaluation - Hiera Repo
+  acl-config: Low-Impact-Project.config
+
+- project: infra/CMDB
+  description: Configuration Machine Database
+  acl-config: Low-Impact-Project.config
+- project: infra/NCCS-Bcfg2
+  description: NCCS Bcfg2 for maintaining a local and mostly backport patched version of Bcfg2
+  acl-config: Low-Impact-Project.config
+- project: infra/eas
+  description: NCCS repository for the Enterprise Audit Shell
+  acl-config: Low-Impact-Project.config
+- project: infra/ibxtools
+  description: Some tools to make InnoDB-based MySQL/MariaDB/Percona backups easier
+  acl-config: Low-Impact-Project.config
+- project: infra/keepalived-checks
+  description: Check scripts for use with Keepalived
+  acl-config: Low-Impact-Project.config
+- project: infra/nagios-interface
+  description: Interface built on naglite interface that is the homepage of the Nagios interfaces in NCCS and NCRC
+  acl-config: Low-Impact-Project.config
+- project: infra/nagios-snmp.rb
+  description: Flexible generic SNMP plugin for Nagios
+  acl-config: Low-Impact-Project.config
+- project: infra/oncall
+  description: NCCS Oncall UI
+  acl-config: Low-Impact-Project.config
+- project: infra/pastebin
+  description: "NCCS Pastebin project, based on sticky-notes: https://github.com/rain0r/sticky-notes"
+  acl-config: Low-Impact-Project.config
+- project: infra/rats-client
+  description: RATS client libraries
+  acl-config: Low-Impact-Project.config
+- project: infra/selinux_modules
+  description: Custom selinux modules HPCOps maintains
+  acl-config: Low-Impact-Project.config
+- project: infra/wiki
+  description: NCCS Wiki code
+  acl-config: Low-Impact-Project.config
+
+- project: website/ncrc.gov
+  description: ncrc.gov website code
+  acl-config: Significant-Impact-Project.config
+- project: website/olcf.ornl.gov
+  description: olcf.ornl.gov website code
+  acl-config: Significant-Impact-Project.config
+- project: website/scdoe.info
+  description: scdoe.info website code
+  acl-config: Significant-Impact-Project.config
+- project: website/users.nccs.gov
+  description: users.nccs.gov website code
+  acl-config: Significant-Impact-Project.config
+
+- project: hpss/hpss_quota
+  description: ORNL-specific HPSS site library that runs in production HPSS to manage quotas
+  acl-config: Low-Impact-Project.config
+- project: hpss/hpssic
+  description: Data quality assurance for HPSS
+  acl-config: Low-Impact-Project.config
+
+- project: network/scripts
+  description: Scripts for the network team in HPCOps
+  acl-config: Low-Impact-Project.config
+
+- project: security/inventory
+  description: Project for hardware and software inventory system
+  acl-config: Low-Impact-Project.config
+- project: security/ossec
+  description: OSSEC Host Intrusion Detection System
+  acl-config: Low-Impact-Project.config
+

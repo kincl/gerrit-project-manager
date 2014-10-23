@@ -47,18 +47,16 @@ import ConfigParser
 import yaml
 import logging
 import os
+import sys
 import re
 import shlex
 import subprocess
 import tempfile
 import time
 
-import gerritlib
+import gerrit_projects.gerritlib as gerritlib
 
 from jinja2 import Environment, FileSystemLoader
-
-PROJECTS_INI = os.environ.get('PROJECTS_INI', '/home/gerrit2/projects.ini')
-PROJECTS_YAML = os.environ.get('PROJECTS_YAML', '/home/gerrit2/projects.yaml')
 
 
 class ProjectsRegistry(object):
@@ -66,8 +64,9 @@ class ProjectsRegistry(object):
 
     It could be used as dict 'project name' -> 'project properties'.
     """
-    def __init__(self, yaml_file=PROJECTS_YAML, single_doc=True):
+    def __init__(self, ini_file, yaml_file, single_doc=True):
         self.yaml_doc = [c for c in yaml.safe_load_all(open(yaml_file))]
+        self.ini_file = ini_file
         self.single_doc = single_doc
 
         self.configs_list = []
@@ -80,9 +79,9 @@ class ProjectsRegistry(object):
         else:
             self.configs_list = self.yaml_doc[1]
 
-        if os.path.exists(PROJECTS_INI):
+        if os.path.exists(self.ini_file):
             self.defaults = ConfigParser.ConfigParser()
-            self.defaults.read(PROJECTS_INI)
+            self.defaults.read(self.ini_file)
         else:
             try:
                 self.defaults = self.yaml_doc[0][0]
@@ -108,7 +107,7 @@ class ProjectsRegistry(object):
         return self.configs.get(item, default)
 
     def get_defaults(self, item, default=None):
-        if os.path.exists(PROJECTS_INI):
+        if os.path.exists(self.ini_file):
             section = 'projects'
             if self.defaults.has_option(section, item):
                 if type(default) == bool:
@@ -120,7 +119,6 @@ class ProjectsRegistry(object):
             return self.defaults.get(item, default)
 
 
-registry = ProjectsRegistry()
 log = logging.getLogger("manage_projects")
 
 
@@ -351,7 +349,7 @@ def make_local_copy(repo_path, project, project_list,
     # and upstream to be only there for ongoing tracking
     # purposes, so rename origin to upstream and add a new
     # origin remote that points at gerrit
-    elif upstream:
+    elif project['upstream']:
         run_command(
             "git clone %(upstream)s %(repo_path)s" % git_opts,
             env=ssh_env)
@@ -520,8 +518,13 @@ def main():
                         help='verbose output')
     parser.add_argument('-d', dest='debug', action='store_true',
                         help='debug output')
-    parser.add_argument('--nocleanup', action='store_true',
-                        help='do not remove temp directories')
+    parser.add_argument('--conf', dest='conf', help='Configuration file',
+                        default='/home/gerrit2/projects.ini')
+    parser.add_argument('--project_conf', dest='project_conf',
+                        help='Project YAML configuration file',
+                        default='/home/gerrit2/projects.yaml')
+    #parser.add_argument('--nocleanup', action='store_true',
+    #                    help='do not remove temp directories')
     parser.add_argument('projects', metavar='project', nargs='*',
                         help='name of project(s) to process')
     args = parser.parse_args()
@@ -538,6 +541,12 @@ def main():
         logging.basicConfig(level=logging.ERROR,
                             format='%(asctime)-6s: %(name)s - %(levelname)s'
                                    ' - %(message)s')
+
+    for f in [args.conf, args.project_conf]:
+        if not os.path.exists(f):
+            logging.error('File must exist! %s' % f)
+            sys.exit(1)
+    registry = ProjectsRegistry(args.conf, args.project_conf)
 
     LOCAL_GIT_DIR = registry.get_defaults('local-git-dir', '/var/lib/git')
     CACHE_DIR = registry.get_defaults('cache-dir',
@@ -636,7 +645,7 @@ def main():
 
             except Exception:
                 log.exception(
-                    "Problems creating %s, moving on." % project)
+                    "Problems creating %s, moving on." % project['name'])
                 continue
     finally:
         os.unlink(ssh_env['GIT_SSH'])
