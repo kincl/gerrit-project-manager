@@ -638,10 +638,13 @@ def main():
                 if project['track_upstream']:
                     sync_upstream(repo_path, project, ssh_env)
 
-                if project['acl_config']:
+                if project['acl_config'] and os.path.exists(project['acl_config']):
                     process_acls(
                         project, ACL_DIR, remote_url, repo_path,
                         ssh_env, gerrit, GERRIT_GITID)
+                else:
+                    if project['description']:
+                        gerrit.updateProject(project['name'], 'description', project['description'])
 
             except Exception:
                 log.exception(

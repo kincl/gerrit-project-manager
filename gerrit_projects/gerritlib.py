@@ -295,11 +295,6 @@ class Gerrit(object):
 
     def replicate(self, project='--all'):
         cmd = 'replication start %s' % project
-        if self.installed_plugins is None:
-            try:
-                self.installed_plugins = self.listPlugins()
-            except Exception:
-                cmd = 'gerrit replicate %s' % project
         out, err = self._ssh(cmd)
         return out.split('\n')
 
