@@ -8,4 +8,5 @@ setup(name='gerrit-project-manager',
       author_email='kincljc@ornl.gov',
       license='Unknown',
       packages=['gerrit_projects'],
+      install_requires=['paramiko'],
       entry_points= { 'console_scripts': ['gerrit-projects=gerrit_projects.projects:main'] })
