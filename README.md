@@ -11,6 +11,7 @@ Configuration
 
 projects.ini
 ------------
+```
 [projects]
 gerrit-host=review.openstack.org
 local-git-dir=/var/lib/git
@@ -22,9 +23,11 @@ cache-dir=/tmp/cache
 gerrit-user=gerrit2
 gerrit-system-user=gerrit2
 gerrit-system-group=gerrit2
+```
 
 projects.yaml
 -------------
+```
 - project: PROJECT_NAME
   options:
    - track-upstream
@@ -35,6 +38,7 @@ projects.yaml
   acl-config: project.config
   acl-parameters:
     project: OTHER_PROJECT_NAME
+```
 
 Using
 =====

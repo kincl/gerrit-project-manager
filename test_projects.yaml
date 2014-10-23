@@ -43,6 +43,9 @@
 - project: infra/eas
   description: NCCS repository for the Enterprise Audit Shell
   acl-config: Low-Impact-Project.config
+- project: infra/gerrit-project-manager
+  description: Manages Gerrit projects
+  acl-config: Low-Impact-Project.config
 - project: infra/ibxtools
   description: Some tools to make InnoDB-based MySQL/MariaDB/Percona backups easier
   acl-config: Low-Impact-Project.config
