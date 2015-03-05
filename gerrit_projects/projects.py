@@ -584,6 +584,7 @@ def main():
                 project['track_upstream'] = 'track-upstream' in project['options']
                 project['acl_config'] = section.get('acl-config',
                                                     '%s.config' % project['name'])
+                project['notify'] = section.get('notify', None)
                 repo_path = os.path.join(CACHE_DIR, project['name'])
 
                 # If this project doesn't want to use gerrit, exit cleanly.
