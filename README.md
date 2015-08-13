@@ -6,7 +6,7 @@ Manages projects in Gerrit
 
 Initial codebase imported from https://github.com/openstack-infra/jeepyb
 
-This is made to look very similar as a project to the jenkins-job-builder
+This is intended to look like the jenkins-job-builder
 
 Configuration
 =============
