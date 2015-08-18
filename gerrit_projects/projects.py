@@ -572,7 +572,7 @@ def main():
 
         for section in registry.configs_list:
             project = dict(name=section['project'])
-            if args.projects and project not in args.projects:
+            if args.projects and project['name'] not in args.projects:
                 continue
 
             try:
