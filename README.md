@@ -48,4 +48,4 @@ Using
 
 Packaging
 =========
-`python setup.py bdist_rpm`
+`python setup.py bdist_rpm --build-requires python-setuptools --requires python-paramiko,PyYAML,python-jinja2`
