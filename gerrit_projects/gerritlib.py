@@ -242,7 +242,7 @@ class Gerrit(object):
         return err
 
     def listProjects(self, show_description=False):
-        cmd = 'gerrit ls-projects'
+        cmd = 'gerrit ls-projects --type ALL'
         if show_description:
             # display projects alongs with descriptions
             # separated by ' - ' sequence
