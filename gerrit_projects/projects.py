@@ -585,6 +585,7 @@ def main():
                 project['acl_config'] = section.get('acl-config',
                                                     '%s.config' % project['name'])
                 project['notify'] = section.get('notify', None)
+                project['replicate'] = section.get('replicate', None)
                 repo_path = os.path.join(CACHE_DIR, project['name'])
 
                 # If this project doesn't want to use gerrit, exit cleanly.
@@ -631,7 +632,8 @@ def main():
                 if project_created:
                     push_to_gerrit(
                         repo_path, project['name'], push_string, remote_url, ssh_env)
-                    gerrit.replicate(project['name'])
+                    if project['replicate']:
+                        gerrit.replicate(project['name'])
 
                 # If we're configured to track upstream, make sure we have
                 # upstream's refs, and then push them to the appropriate
